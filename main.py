@@ -56,6 +56,48 @@ def get_playlists_df():
         })
     return pd.DataFrame(playlist_data)
 
+#spotify recommendations based on seed tracks, artists, and genres
+#spotify recommendations endpoint is broken, function retained for future use
+def get_reccommendations(seed_tracks, seed_artists=None, seed_genres=None, limit=20):
+    """Get song recommendations based on seed tracks, artists, and genres."""
+    recommendations = sp.recommendations(seed_tracks=seed_tracks, seed_artists=seed_artists, seed_genres=seed_genres, limit=limit)
+    recs = []
+    for track in recommendations['tracks']:
+        recs.append({
+            'track_id': track.get('id'),
+            'track_name': track.get('name'),
+            'artist_name': track['artists'][0]['name'] if track.get('artists') else None,
+            'album_name': track['album']['name'] if track.get('album') else None,
+            'popularity': track.get('popularity'),
+            'explicit': track.get('explicit'),
+            'duration_ms': track.get('duration_ms'),
+            'spotify_url': track['external_urls']['spotify'] if track.get('external_urls') else None
+        })
+    return pd.DataFrame(recs)
+
+def get_playlist_tracks(playlist_id):
+    results = sp.playlist_items(playlist_id, limit=100)
+    tracks = results["items"]
+
+    # Keep fetching if there are more (pagination)
+    while results["next"]:
+        results = sp.next(results)
+        tracks.extend(results["items"])
+    tracks_clean = []
+    for item in tracks:
+        track = item['track']
+        tracks_clean.append({
+            'track_id': track.get('id'),
+            'track_name': track.get('name'),
+            'artist_name': track['artists'][0]['name'] if track.get('artists') else None,
+            'album_name': track['album']['name'] if track.get('album') else None,
+            'popularity': track.get('popularity'),
+            'explicit': track.get('explicit'),
+            'duration_ms': track.get('duration_ms'),
+            'spotify_url': track['external_urls']['spotify'] if track.get('external_urls') else None
+        })
+
+    return tracks_clean
 def get_top_tracks_df():
     """Return DataFrame of user's top tracks (listening history) with only relevant info."""
     top_tracks = sp.current_user_top_tracks(limit=50, time_range='medium_term')
