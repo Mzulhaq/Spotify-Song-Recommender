@@ -120,8 +120,6 @@ if __name__ == "__main__":
     playlists_df = get_playlists_df()
     top_tracks_df = get_top_tracks_df()
 
-    liked_songs_df.to_csv('liked_songs.csv', index=False)
-    playlists_df.to_csv('playlists.csv', index=False)
-    top_tracks_df.to_csv('top_tracks.csv', index=False)
-    
-
+    liked_songs_df.to_csv(os.path.join("data", "liked_songs.csv"), index=False)
+    playlists_df.to_csv(os.path.join("data", "playlists.csv"), index=False)
+    top_tracks_df.to_csv(os.path.join("data", "top_tracks.csv"), index=False)
