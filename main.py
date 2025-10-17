@@ -76,25 +76,47 @@ def get_reccommendations(seed_tracks, seed_artists=None, seed_genres=None, limit
     return pd.DataFrame(recs)
 
 def get_playlist_tracks(playlist_id):
-    results = sp.playlist_items(playlist_id, limit=100)
-    tracks = results["items"]
+    """Return a list of track dicts from a playlist, skipping non-track or malformed items."""
+    try:
+        results = sp.playlist_items(playlist_id, limit=100, additional_types=["track"])  # exclude episodes
+    except Exception as e:
+        print(f"Error fetching playlist items: {e}")
+        return []
+
+    tracks = results.get("items", []) if results else []
 
     # Keep fetching if there are more (pagination)
-    while results["next"]:
-        results = sp.next(results)
-        tracks.extend(results["items"])
+    while results and results.get("next"):
+        try:
+            results = sp.next(results)
+            tracks.extend(results.get("items", []))
+        except Exception as e:
+            print(f"Error during pagination: {e}")
+            break
+
     tracks_clean = []
     for item in tracks:
-        track = item['track']
+        track = item.get('track') if isinstance(item, dict) else None
+        if not track:
+            continue
+        # Skip local tracks or non-track items
+        if track.get('is_local') or track.get('type') != 'track':
+            continue
+
+        artists = track.get('artists') or []
+        artist_name = artists[0]['name'] if len(artists) > 0 and isinstance(artists[0], dict) else None
+        album = track.get('album') or {}
+        external_urls = track.get('external_urls') or {}
+
         tracks_clean.append({
             'track_id': track.get('id'),
             'track_name': track.get('name'),
-            'artist_name': track['artists'][0]['name'] if track.get('artists') else None,
-            'album_name': track['album']['name'] if track.get('album') else None,
+            'artist_name': artist_name,
+            'album_name': album.get('name'),
             'popularity': track.get('popularity'),
             'explicit': track.get('explicit'),
             'duration_ms': track.get('duration_ms'),
-            'spotify_url': track['external_urls']['spotify'] if track.get('external_urls') else None
+            'spotify_url': external_urls.get('spotify')
         })
 
     return tracks_clean

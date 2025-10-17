@@ -47,7 +47,8 @@ def get_playlist_song_ids_from_user():
 
 if __name__ == "__main__":
     user_song_ids = get_user_song_ids()
-    print(f"Found {len(user_song_ids)} track IDs.")
+    print(user_song_ids)
+    print(f"Found {len(user_song_ids)} unique songs from your selection.")
 
 
 # 2. Fetch Audio Features for User Songs
