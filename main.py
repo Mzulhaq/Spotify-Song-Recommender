@@ -1,4 +1,5 @@
 
+from ast import While
 import os
 import pandas as pd
 import spotipy
@@ -9,7 +10,30 @@ load_dotenv()
 client_id = os.getenv("client_id")
 client_secret = os.getenv("client_secret")
 redirect_uri = "http://127.0.0.1:8888/callback"
-scope = "user-library-read user-top-read playlist-read-private"
+scope = (
+    "user-read-private "
+    "user-read-email "
+    "user-library-read "
+    "user-library-modify "
+    "user-top-read "
+    "user-read-recently-played "
+    "user-follow-read "
+    "user-follow-modify "
+    "playlist-read-private "
+    "playlist-read-collaborative "
+    "playlist-modify-private "
+    "playlist-modify-public "
+    "ugc-image-upload "
+    "user-read-playback-state "
+    "user-modify-playback-state "
+    "user-read-currently-playing "
+    "app-remote-control "
+    "streaming "
+    "user-read-playback-position "
+    "user-read-currently-playing "
+    "user-read-recently-played "
+    "user-read-playback-position"
+)
 
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=client_id,
@@ -120,6 +144,39 @@ def get_playlist_tracks(playlist_id):
         })
 
     return tracks_clean
+
+def get_audio_features(track_ids):
+    """
+
+    Fetch audio features for a list of track IDs.
+    Handles errors gracefully and skips problematic tracks.
+    """
+    track_features = []
+    
+    # Loop through in chunks of 50 (Spotify API limit is 100, but 50 is safer)
+    for i in range(0, len(track_ids), 50):
+        chunk = track_ids[i:i+50]
+        try:
+            features = sp.audio_features(tracks=chunk)
+            if features:
+                track_features.extend([f for f in features if f is not None])
+        except Exception as e:
+            print(f"Error fetching audio features for chunk {i//50 + 1}: {e}")
+            # Try fetching one-by-one for this chunk to identify problem tracks
+            for track_id in chunk:
+                try:
+                    feature = sp.audio_features(tracks=[track_id])
+                    if feature and feature[0]:
+                        track_features.append(feature[0])
+                except Exception as e2:
+                    print(f"Skipping track {track_id}: {e2}")
+                    continue
+    
+    return track_features
+
+
+
+
 def get_top_tracks_df():
     """Return DataFrame of user's top tracks (listening history) with only relevant info."""
     top_tracks = sp.current_user_top_tracks(limit=50, time_range='medium_term')
@@ -141,6 +198,9 @@ if __name__ == "__main__":
     liked_songs_df = get_liked_songs_df()
     playlists_df = get_playlists_df()
     top_tracks_df = get_top_tracks_df()
+
+
+    print(get_audio_features(top_tracks_df['track_id'].dropna().tolist()))
 
     liked_songs_df.to_csv(os.path.join("data", "liked_songs.csv"), index=False)
     playlists_df.to_csv(os.path.join("data", "playlists.csv"), index=False)

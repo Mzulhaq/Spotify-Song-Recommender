@@ -47,13 +47,15 @@ def get_playlist_song_ids_from_user():
 
 if __name__ == "__main__":
     user_song_ids = get_user_song_ids()
-    print(user_song_ids)
     print(f"Found {len(user_song_ids)} unique songs from your selection.")
 
+    # 2. Fetch Audio Features for User Songs
+    # - Use Spotify API to get audio features for each song
+    print(f'Retreiving Audio Features')
+    user_features_df = main.get_audio_features(user_song_ids)
+    print(user_features_df)
 
-# 2. Fetch Audio Features for User Songs
-# - Use Spotify API to get audio features for each song
-# user_features_df = fetch_audio_features(user_song_ids)
+
 
 # 3. Build Feature Matrix
 # - DataFrame: rows = songs, columns = audio features (danceability, energy, valence, etc.)
