@@ -1,3 +1,6 @@
+#spotify api deprecated, retained for future use
+
+
 
 from ast import While
 import os
